@@ -1,6 +1,11 @@
-const { app, BrowserWindow, Tray, Menu, Notification, ipcMain, nativeImage, shell } = require('electron');
+const { app, BrowserWindow, Tray, Menu, Notification, ipcMain, nativeImage, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { autoUpdater } = require('electron-updater');
+
+// === AUTO-UPDATER CONFIG ===
+autoUpdater.autoDownload = false; // On télécharge seulement si l'utilisateur confirme
+autoUpdater.autoInstallOnAppQuit = true;
 
 let mainWindow = null;
 let tray = null;
@@ -340,6 +345,102 @@ ipcMain.handle('test-scheduled-alert', (event, alertId) => {
   return true;
 });
 
+// === AUTO-UPDATE FUNCTIONS ===
+let updateInProgress = false;
+
+function setupAutoUpdater() {
+  autoUpdater.on('checking-for-update', () => {
+    console.log('[Update] Checking for update...');
+    if (mainWindow) mainWindow.webContents.send('update-status', { status: 'checking' });
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    console.log('[Update] Update available:', info.version);
+    if (mainWindow) mainWindow.webContents.send('update-status', {
+      status: 'available',
+      version: info.version,
+      currentVersion: app.getVersion(),
+      releaseNotes: info.releaseNotes
+    });
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    console.log('[Update] No update available');
+    if (mainWindow) mainWindow.webContents.send('update-status', {
+      status: 'up-to-date',
+      currentVersion: app.getVersion()
+    });
+  });
+
+  autoUpdater.on('error', (err) => {
+    console.error('[Update] Error:', err);
+    updateInProgress = false;
+    if (mainWindow) mainWindow.webContents.send('update-status', {
+      status: 'error',
+      error: err.message
+    });
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    const pct = Math.round(progress.percent);
+    console.log(`[Update] Downloading: ${pct}%`);
+    if (mainWindow) mainWindow.webContents.send('update-status', {
+      status: 'downloading',
+      percent: pct
+    });
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('[Update] Downloaded, ready to install:', info.version);
+    updateInProgress = false;
+    if (mainWindow) mainWindow.webContents.send('update-status', {
+      status: 'downloaded',
+      version: info.version
+    });
+    // Notif système
+    const notif = new Notification({
+      title: '🎉 Mise à jour prête !',
+      body: `HUSTLE.OS v${info.version} est téléchargée. Clique pour redémarrer.`,
+      silent: false
+    });
+    notif.on('click', () => {
+      autoUpdater.quitAndInstall();
+    });
+    notif.show();
+  });
+}
+
+ipcMain.handle('check-for-updates', async () => {
+  if (updateInProgress) return { status: 'busy' };
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return { status: 'ok', currentVersion: app.getVersion() };
+  } catch (e) {
+    console.error('[Update] Check failed:', e);
+    return { status: 'error', error: e.message };
+  }
+});
+
+ipcMain.handle('download-update', async () => {
+  if (updateInProgress) return { status: 'busy' };
+  updateInProgress = true;
+  try {
+    await autoUpdater.downloadUpdate();
+    return { status: 'started' };
+  } catch (e) {
+    updateInProgress = false;
+    return { status: 'error', error: e.message };
+  }
+});
+
+ipcMain.handle('install-update', () => {
+  autoUpdater.quitAndInstall();
+});
+
+ipcMain.handle('get-app-version', () => {
+  return app.getVersion();
+});
+
 // === APP LIFECYCLE ===
 app.whenReady().then(() => {
   loadState();
@@ -360,6 +461,16 @@ app.whenReady().then(() => {
 
   // Toujours démarrer le timer des alertes programmées
   startScheduledTimer();
+
+  // Setup auto-updater
+  setupAutoUpdater();
+
+  // Vérifier les mises à jour au lancement (silencieusement, après 10 secondes)
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch(err => {
+      console.log('[Update] Auto-check on launch failed (normal in dev):', err.message);
+    });
+  }, 10 * 1000);
 
   // Mac: re-create window when dock icon clicked
   app.on('activate', () => {

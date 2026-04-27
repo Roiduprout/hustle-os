@@ -734,6 +734,25 @@
     <div id="scheduled-list"></div>
   </div>
 
+  <!-- MISES À JOUR -->
+  <div class="notif-panel">
+    <div class="notif-panel-row">
+      <div class="notif-icon">🔄</div>
+      <div class="notif-info">
+        <div class="notif-title">Mises à jour</div>
+        <div class="notif-status" id="update-status">Version <span id="app-version">—</span></div>
+      </div>
+      <button class="notif-toggle" id="update-btn" onclick="checkForUpdates()">VÉRIFIER</button>
+    </div>
+    <div id="update-progress" style="display:none; margin-top: 12px;">
+      <div class="quest-bar"><div id="update-bar" class="quest-fill" style="width: 0%; background: var(--accent);"></div></div>
+      <div class="quest-progress-text" style="margin-top:4px;">
+        <span id="update-progress-text">Téléchargement...</span>
+        <span id="update-percent" class="mono">0%</span>
+      </div>
+    </div>
+  </div>
+
   <div class="quest-card" id="quest-card">
     <div class="quest-text" id="quest-text">Complète 3 tâches aujourd'hui</div>
     <div class="quest-bar">
@@ -1286,6 +1305,105 @@ function renderScheduled() {
   `).join('');
 }
 
+// === AUTO-UPDATE ===
+async function loadAppVersion() {
+  if (window.hustleAPI && window.hustleAPI.isElectron) {
+    const v = await window.hustleAPI.getAppVersion();
+    document.getElementById('app-version').textContent = v;
+  } else {
+    document.getElementById('app-version').textContent = '1.2.0 (web)';
+  }
+}
+
+async function checkForUpdates() {
+  if (!window.hustleAPI || !window.hustleAPI.isElectron) {
+    alert('Les mises à jour automatiques ne fonctionnent que dans l\'app installée.');
+    return;
+  }
+  const btn = document.getElementById('update-btn');
+  const status = document.getElementById('update-status');
+  btn.textContent = 'VÉRIFICATION...';
+  btn.disabled = true;
+  status.textContent = 'Recherche d\'une mise à jour...';
+  status.className = 'notif-status pending';
+
+  try {
+    await window.hustleAPI.checkForUpdates();
+  } catch (e) {
+    status.textContent = 'Erreur : ' + e.message;
+    status.className = 'notif-status off';
+    btn.textContent = 'RÉESSAYER';
+    btn.disabled = false;
+  }
+}
+
+async function downloadUpdate() {
+  document.getElementById('update-progress').style.display = 'block';
+  await window.hustleAPI.downloadUpdate();
+}
+
+async function installUpdate() {
+  await window.hustleAPI.installUpdate();
+}
+
+if (window.hustleAPI && window.hustleAPI.onUpdateStatus) {
+  window.hustleAPI.onUpdateStatus((info) => {
+    const status = document.getElementById('update-status');
+    const btn = document.getElementById('update-btn');
+    const progress = document.getElementById('update-progress');
+
+    switch (info.status) {
+      case 'checking':
+        status.textContent = 'Vérification...';
+        status.className = 'notif-status pending';
+        btn.textContent = '...';
+        btn.disabled = true;
+        break;
+      case 'available':
+        status.textContent = `Nouvelle version v${info.version} disponible !`;
+        status.className = 'notif-status on';
+        btn.textContent = 'TÉLÉCHARGER';
+        btn.disabled = false;
+        btn.onclick = downloadUpdate;
+        break;
+      case 'up-to-date':
+        status.textContent = `Version ${info.currentVersion} — à jour ✓`;
+        status.className = 'notif-status on';
+        btn.textContent = 'VÉRIFIER';
+        btn.disabled = false;
+        btn.onclick = checkForUpdates;
+        progress.style.display = 'none';
+        break;
+      case 'downloading':
+        progress.style.display = 'block';
+        document.getElementById('update-bar').style.width = info.percent + '%';
+        document.getElementById('update-percent').textContent = info.percent + '%';
+        document.getElementById('update-progress-text').textContent = 'Téléchargement en cours...';
+        btn.textContent = '...';
+        btn.disabled = true;
+        break;
+      case 'downloaded':
+        progress.style.display = 'block';
+        document.getElementById('update-bar').style.width = '100%';
+        document.getElementById('update-percent').textContent = '100%';
+        document.getElementById('update-progress-text').textContent = `v${info.version} prête !`;
+        status.textContent = `v${info.version} téléchargée — redémarre pour installer`;
+        status.className = 'notif-status on';
+        btn.textContent = 'REDÉMARRER';
+        btn.disabled = false;
+        btn.onclick = installUpdate;
+        break;
+      case 'error':
+        status.textContent = 'Erreur : ' + (info.error || 'inconnue');
+        status.className = 'notif-status off';
+        btn.textContent = 'RÉESSAYER';
+        btn.disabled = false;
+        btn.onclick = checkForUpdates;
+        break;
+    }
+  });
+}
+
 function updateNotifUI() {
   const status = document.getElementById('notif-status');
   const btn = document.getElementById('notif-btn');
@@ -1414,6 +1532,7 @@ function render() {
 
 document.getElementById('task-input').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
 loadState();
+loadAppVersion();
 </script>
 </body>
 </html>
