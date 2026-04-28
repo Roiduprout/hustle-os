@@ -736,11 +736,15 @@ async function saveNotes() { state.notes = document.getElementById('notes-input'
 // ═══════════════════════════════════════════
 //  TAB NAVIGATION
 // ═══════════════════════════════════════════
-function switchTab(tab) {
+async function switchTab(tab) {
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  if (tab === 'tasks') {
+    const changed = applyRoutinesToToday();
+    if (changed) { await saveState(); render(); }
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -862,7 +866,8 @@ async function addRoutine() {
     days: 'all', enabled: true,
     lastAddedDate: null, lastNotifDate: null
   });
-  await saveState(); renderRoutines();
+  applyRoutinesToToday();
+  await saveState(); render();
 }
 
 async function deleteRoutine(id) {
@@ -875,7 +880,8 @@ async function toggleRoutine(id) {
   const r = state.routines.find(x => x.id === id);
   if (!r) return;
   r.enabled = !r.enabled; r.lastAddedDate = null;
-  await saveState(); renderRoutines();
+  if (r.enabled) applyRoutinesToToday();
+  await saveState(); render();
 }
 
 async function updateRoutineField(id, field, val) {
