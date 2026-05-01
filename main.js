@@ -238,7 +238,19 @@ function checkScheduledAlerts() {
       if (!r.enabled || r.time !== currentTime || r.lastNotifDate === today) continue;
       const days = r.days;
       if (days !== 'all' && Array.isArray(days) && !days.includes(todayDay)) continue;
-      showCustomNotif({ title: `🔁 ${r.name}`, body: `C'est l'heure — tâche ajoutée à ta liste`, total: 0 });
+      // Cherche la tâche correspondante dans state.tasks (ajoutée par le renderer)
+      const matchTask = state.tasks.find(t => t.fromRoutine === r.id && !t.done);
+      if (matchTask) {
+        const icon = matchTask.priority === 'haute' ? '🚨' : matchTask.priority === 'moyenne' ? '⚡' : '📌';
+        showCustomNotif({
+          title: `🔁 ${r.name}`,
+          tasks: [{ id: matchTask.id, text: matchTask.text.length > 38 ? matchTask.text.slice(0,38)+'…' : matchTask.text, priority: matchTask.priority, icon }],
+          total: state.tasks.length,
+          done: state.tasks.filter(t => t.done).length
+        });
+      } else {
+        showCustomNotif({ title: `🔁 ${r.name}`, body: `C'est l'heure — tâche ajoutée à ta liste`, total: 0 });
+      }
       r.lastNotifDate = today; saveState();
     }
   }
@@ -285,7 +297,18 @@ ipcMain.handle('test-scheduled-alert', (event, alertId) => {
 ipcMain.handle('test-routine', (event, routineId) => {
   const r = state.routines.find(x => x.id === routineId);
   if (!r) return false;
-  showCustomNotif({ title: `🔁 ${r.name} (test)`, body: `C'est l'heure — tâche ajoutée à ta liste`, total: 0 });
+  const matchTask = state.tasks.find(t => t.fromRoutine === r.id && !t.done);
+  if (matchTask) {
+    const icon = matchTask.priority === 'haute' ? '🚨' : matchTask.priority === 'moyenne' ? '⚡' : '📌';
+    showCustomNotif({
+      title: `🔁 ${r.name} (test)`,
+      tasks: [{ id: matchTask.id, text: matchTask.text.length > 38 ? matchTask.text.slice(0,38)+'…' : matchTask.text, priority: matchTask.priority, icon }],
+      total: state.tasks.length,
+      done: state.tasks.filter(t => t.done).length
+    });
+  } else {
+    showCustomNotif({ title: `🔁 ${r.name} (test)`, body: `C'est l'heure — tâche ajoutée à ta liste`, total: 0 });
+  }
   return true;
 });
 ipcMain.handle('get-app-version', () => app.getVersion());
