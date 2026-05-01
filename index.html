@@ -56,7 +56,7 @@
   .bottom-nav {
     position: fixed; bottom: 0; left: 0; right: 0; height: var(--nav-h);
     background: var(--surface); border-top: 1px solid var(--border);
-    display: grid; grid-template-columns: repeat(4, 1fr); z-index: 50;
+    display: grid; grid-template-columns: repeat(5, 1fr); z-index: 50;
   }
   .nav-btn {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -253,6 +253,55 @@
   .del-btn { background: var(--surface-2); border: 1px solid var(--border); color: var(--red); border-radius: 5px; padding: 7px 12px; font-family: ui-monospace, monospace; font-size: 10px; font-weight: 700; cursor: pointer; transition: all 0.15s; }
   .del-btn:hover { border-color: var(--red); background: rgba(239,68,68,0.08); }
 
+  /* ── ID TAB ── */
+  .jarvis-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.06), rgba(59,130,246,0.04));
+    border: 1px solid rgba(168,85,247,0.25); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px;
+  }
+  .jarvis-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .jarvis-avatar {
+    width: 36px; height: 36px; background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.3);
+    border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+  }
+  .jarvis-brand { font-family: ui-monospace, monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: var(--violet); }
+  .jarvis-sub { font-family: ui-monospace, monospace; font-size: 9px; color: var(--text-mute); letter-spacing: 0.08em; }
+  .jarvis-insights { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .insight-row { display: flex; align-items: flex-start; gap: 8px; padding: 7px 10px; background: rgba(0,0,0,0.25); border-radius: 6px; }
+  .insight-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+  .insight-text { font-size: 12px; color: var(--text-dim); line-height: 1.45; }
+  .jarvis-chat { display: flex; flex-direction: column; gap: 8px; }
+  .jarvis-messages { display: flex; flex-direction: column; gap: 6px; max-height: 140px; overflow-y: auto; }
+  .jarvis-messages::-webkit-scrollbar { width: 2px; }
+  .jarvis-messages::-webkit-scrollbar-thumb { background: var(--border); }
+  .msg-jarvis { background: rgba(168,85,247,0.08); border: 1px solid rgba(168,85,247,0.18); border-radius: 8px 8px 8px 2px; padding: 7px 10px; font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+  .msg-user { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px 8px 2px 8px; padding: 7px 10px; font-size: 12px; color: var(--text); line-height: 1.5; align-self: flex-end; max-width: 85%; }
+  .jarvis-input-row { display: flex; gap: 6px; }
+  .jarvis-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; color: var(--text); font-family: inherit; font-size: 12px; outline: none; transition: border 0.15s; }
+  .jarvis-input:focus { border-color: var(--violet); }
+  .jarvis-input::placeholder { color: var(--text-mute); }
+  .jarvis-send { background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); color: var(--violet); border-radius: 6px; padding: 8px 12px; font-family: ui-monospace, monospace; font-size: 10px; font-weight: 700; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .jarvis-send:hover { background: rgba(168,85,247,0.25); }
+
+  .idea-form { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .idea-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; color: var(--text); font-family: inherit; font-size: 14px; outline: none; transition: border 0.15s; margin-bottom: 8px; }
+  .idea-input:focus { border-color: var(--accent); }
+  .idea-input::placeholder { color: var(--text-mute); }
+  .idea-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+  .idea-btn { width: 100%; background: var(--accent); color: #000; border: none; border-radius: 6px; padding: 10px; font-family: ui-monospace, monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; cursor: pointer; transition: all 0.15s; }
+  .idea-btn:hover { opacity: 0.88; }
+  .idea-slot-hint { font-family: ui-monospace, monospace; font-size: 10px; color: var(--text-mute); text-align: center; margin-bottom: 8px; }
+
+  .ideas-list { display: flex; flex-direction: column; gap: 6px; }
+  .idea-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
+  .idea-item.converted { opacity: 0.35; }
+  .idea-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; flex-shrink: 0; }
+  .idea-item.converted .idea-dot { background: var(--green); }
+  .idea-body { flex: 1; min-width: 0; }
+  .idea-text { font-size: 13px; font-weight: 600; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .idea-meta { font-family: ui-monospace, monospace; font-size: 9px; color: var(--text-mute); }
+  .idea-del { background: none; border: none; color: var(--text-mute); cursor: pointer; font-size: 16px; padding: 2px 4px; transition: color 0.15s; }
+  .idea-del:hover { color: var(--red); }
+
   /* ── SETTINGS TAB ── */
   .settings-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); }
   .settings-row:last-child { border-bottom: none; }
@@ -389,7 +438,7 @@
       <input type="text" class="add-input" id="task-input" placeholder="Nouvelle tâche pour demain..." />
       <div class="add-row">
         <select class="add-select" id="category-select">
-          <option value="ofm">🔥 OFM Juliette</option>
+          <option value="ofm">🔥 OFM</option>
           <option value="webdev">💻 Web Dev</option>
           <option value="julien">⚽ Julien Pro</option>
           <option value="iptv">📺 RoiDuStreaming</option>
@@ -539,6 +588,67 @@
     </div>
   </div>
 
+  <!-- ─ ID TAB ─ -->
+  <div class="tab-pane" id="tab-id">
+
+    <!-- JARVIS -->
+    <div class="jarvis-card">
+      <div class="jarvis-header">
+        <div class="jarvis-avatar">🤖</div>
+        <div>
+          <div class="jarvis-brand">JARVIS</div>
+          <div class="jarvis-sub">Assistant productivité · rule-based</div>
+        </div>
+      </div>
+      <div class="jarvis-insights" id="jarvis-insights"></div>
+      <div class="jarvis-chat">
+        <div class="jarvis-messages" id="jarvis-messages"></div>
+        <div class="jarvis-input-row">
+          <input type="text" class="jarvis-input" id="jarvis-input" placeholder="Pose une question à Jarvis…" />
+          <button class="jarvis-send" onclick="sendJarvis()">ENVOYER</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CAPTURE IDÉE -->
+    <div class="sec-head">
+      <div class="sec-bar"></div>
+      <div class="sec-title">Capturer une idée</div>
+    </div>
+    <div class="idea-form">
+      <input type="text" class="idea-input" id="idea-input" placeholder="Note ton idée rapidement…" />
+      <div class="idea-row">
+        <select class="add-select" id="idea-category">
+          <option value="ofm">🔥 OFM</option>
+          <option value="webdev">💻 Web Dev</option>
+          <option value="julien">⚽ Julien Pro</option>
+          <option value="iptv">📺 IPTV</option>
+          <option value="perso">✨ Perso</option>
+        </select>
+        <select class="add-select" id="idea-priority">
+          <option value="haute">🚨 Haute</option>
+          <option value="moyenne" selected>⚡ Moyenne</option>
+          <option value="basse">📌 Basse</option>
+        </select>
+      </div>
+      <div class="idea-slot-hint" id="idea-slot-hint">💡 Sera planifiée demain dans un créneau libre</div>
+      <button class="idea-btn" onclick="captureIdea()">💡 PROGRAMMER POUR DEMAIN</button>
+    </div>
+
+    <!-- LISTE DES IDÉES -->
+    <div class="sec-head">
+      <div class="sec-bar"></div>
+      <div class="sec-title">Idées programmées</div>
+      <div class="sec-count" id="ideas-count">0</div>
+    </div>
+    <div class="ideas-list" id="ideas-list"></div>
+    <div class="empty-state" id="ideas-empty" style="display:none;">
+      <div class="empty-icon">💡</div>
+      <div class="empty-text">Aucune idée capturée</div>
+      <div class="empty-sub">Utilise ⌘⇧H pour ouvrir cet onglet rapidement</div>
+    </div>
+  </div>
+
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
     <button class="nav-btn active" data-tab="tasks" onclick="switchTab('tasks')">
@@ -552,6 +662,9 @@
     </button>
     <button class="nav-btn" data-tab="settings" onclick="switchTab('settings')">
       <span class="nav-icon">⚙️</span><span class="nav-label">Réglages</span>
+    </button>
+    <button class="nav-btn" data-tab="id" onclick="switchTab('id')">
+      <span class="nav-icon">💡</span><span class="nav-label">ID</span>
     </button>
   </nav>
 </div>
@@ -590,7 +703,7 @@
 //  STATE
 // ═══════════════════════════════════════════
 let state = {
-  tasks: [], notes: '', routines: [], crm: { contacts: [] },
+  tasks: [], notes: '', routines: [], crm: { contacts: [] }, ideas: [],
   game: {
     totalXP: 0, completedAllTime: 0, streak: 0, lastActiveDate: null,
     achievements: [], todayDate: null, todayCompleted: 0, todayHighDone: 0,
@@ -610,7 +723,7 @@ let currentCRMFilter = 'all';
 //  CONSTANTS
 // ═══════════════════════════════════════════
 const CATS = {
-  ofm:    { code: 'OFM',    cls: 'cat-ofm',    label: '🔥 OFM Juliette' },
+  ofm:    { code: 'OFM',    cls: 'cat-ofm',    label: '🔥 OFM' },
   webdev: { code: 'WEB',    cls: 'cat-webdev',  label: '💻 Web Dev' },
   julien: { code: 'JULIEN', cls: 'cat-julien',  label: '⚽ Julien Pro' },
   iptv:   { code: 'IPTV',   cls: 'cat-iptv',    label: '📺 RoiDuStreaming' },
@@ -700,6 +813,7 @@ async function loadState() {
   if (!state.routines) state.routines = [];
   if (!state.crm) state.crm = { contacts: [] };
   if (!state.crm.contacts) state.crm.contacts = [];
+  if (!state.ideas) state.ideas = [];
 
   // Daily reset
   const today = todayStr();
@@ -744,6 +858,12 @@ async function switchTab(tab) {
   if (tab === 'tasks') {
     const changed = applyRoutinesToToday();
     if (changed) { await saveState(); render(); }
+  }
+  if (tab === 'id') {
+    renderJarvisInsights();
+    renderIdeas();
+    updateIdeaSlotHint();
+    setTimeout(() => document.getElementById('idea-input').focus(), 100);
   }
 }
 
@@ -1319,6 +1439,209 @@ if (window.hustleAPI && window.hustleAPI.onStateChange) {
 }
 
 // ═══════════════════════════════════════════
+//  ID TAB — CRÉNEAU LIBRE
+// ═══════════════════════════════════════════
+function findFreeSlotTomorrow() {
+  const tomorrowDayIdx = (new Date().getDay() + 1) % 7;
+  const busyMins = [];
+
+  (state.routines || []).forEach(r => {
+    if (!r.enabled || !r.time) return;
+    if (r.days === 'all' || (Array.isArray(r.days) && r.days.includes(tomorrowDayIdx))) {
+      const [h, m] = r.time.split(':').map(Number);
+      busyMins.push(h * 60 + m);
+    }
+  });
+  state.tasks.filter(t => t.time).forEach(t => {
+    const [h, m] = t.time.split(':').map(Number);
+    busyMins.push(h * 60 + m);
+  });
+
+  for (let h = 8; h <= 21; h++) {
+    for (const m of [0, 30]) {
+      const slot = h * 60 + m;
+      if (!busyMins.some(b => Math.abs(b - slot) < 45)) {
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+      }
+    }
+  }
+  return '10:00';
+}
+
+function updateIdeaSlotHint() {
+  const slot = findFreeSlotTomorrow();
+  const el = document.getElementById('idea-slot-hint');
+  if (el) el.textContent = `💡 Créneau libre détecté demain à ${slot}`;
+}
+
+async function captureIdea() {
+  const input = document.getElementById('idea-input');
+  const text = input.value.trim();
+  if (!text) return;
+  const slot = findFreeSlotTomorrow();
+  const cat = document.getElementById('idea-category').value;
+  const prio = document.getElementById('idea-priority').value;
+
+  const idea = {
+    id: Date.now(), text, category: cat, priority: prio,
+    scheduledTime: slot, createdAt: todayStr(), converted: false
+  };
+  if (!state.ideas) state.ideas = [];
+  state.ideas.unshift(idea);
+
+  // Ajouter directement en tâche pour demain
+  state.tasks.push({
+    id: Date.now() + 1, text,
+    category: cat, priority: prio,
+    time: slot, done: false, fromIdea: idea.id
+  });
+  idea.converted = true;
+
+  input.value = '';
+  await saveState();
+  renderIdeas();
+  updateIdeaSlotHint();
+  showXPPop('💡 Idée programmée !', window.innerWidth / 2, 180);
+}
+
+async function deleteIdea(id) {
+  state.ideas = state.ideas.filter(x => x.id !== id);
+  await saveState(); renderIdeas();
+}
+
+function renderIdeas() {
+  const ideas = state.ideas || [];
+  const list = document.getElementById('ideas-list');
+  const empty = document.getElementById('ideas-empty');
+  const count = document.getElementById('ideas-count');
+  if (!list) return;
+  count.textContent = ideas.length;
+  if (ideas.length === 0) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  list.innerHTML = ideas.map(idea => {
+    const cat = CATS[idea.category] || CATS.perso;
+    return `
+      <div class="idea-item ${idea.converted ? 'converted' : ''}">
+        <div class="idea-dot"></div>
+        <div class="idea-body">
+          <div class="idea-text">${esc(idea.text)}</div>
+          <div class="idea-meta">
+            <span class="tag ${cat.cls}" style="display:inline;padding:1px 4px;">${cat.code}</span>
+            · ${idea.scheduledTime} · ${idea.converted ? '✓ Ajoutée aux tâches' : 'En attente'}
+          </div>
+        </div>
+        <button class="idea-del" onclick="deleteIdea(${idea.id})">×</button>
+      </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+//  JARVIS
+// ═══════════════════════════════════════════
+function getJarvisInsights() {
+  const insights = [];
+  const total = state.tasks.length;
+  const done = state.tasks.filter(t => t.done).length;
+  const undone = total - done;
+  const highUndone = state.tasks.filter(t => t.priority === 'haute' && !t.done).length;
+  const rate = total > 0 ? Math.round(done / total * 100) : 0;
+  const hour = new Date().getHours();
+  const xp = state.game.totalXP;
+  const lvl = getLevel(xp);
+  const xpNext = xpForLevel(lvl + 1) - xp;
+
+  if (hour < 10) insights.push({ icon: '🌅', text: 'Bonne matinée ! Commence par tes tâches haute priorité pour attaquer fort.' });
+  else if (hour >= 12 && hour < 14) insights.push({ icon: '☀️', text: 'Mi-journée — bon moment pour faire un point sur ta progression.' });
+  else if (hour >= 20) insights.push({ icon: '🌙', text: 'Fin de journée. Prépare ta liste de demain avant de déconnecter.' });
+
+  if (highUndone > 0) insights.push({ icon: '🚨', text: `${highUndone} tâche${highUndone > 1 ? 's haute priorité non faites' : ' haute priorité non faite'} — focus dessus en premier !` });
+
+  if (state.game.streak >= 3) insights.push({ icon: '🔥', text: `Streak de ${state.game.streak} jours consécutifs. Ne casse pas la série !` });
+  else if (state.game.streak === 0) insights.push({ icon: '⚡', text: 'Lance une série de jours consécutifs — complète au moins 3 tâches aujourd\'hui.' });
+
+  if (rate === 100 && total > 0) insights.push({ icon: '🏆', text: `100% des tâches validées (${total}/${total}). Journée parfaite !` });
+  else if (rate >= 70 && total > 0) insights.push({ icon: '💪', text: `${rate}% complété — encore ${undone} tâche${undone > 1 ? 's' : ''} et tu boucles la journée.` });
+  else if (rate < 30 && total > 0 && hour > 14) insights.push({ icon: '⏰', text: `Seulement ${rate}% complété et il est ${hour}h. Concentre-toi sur les priorités restantes.` });
+
+  const cats = {};
+  state.tasks.filter(t => !t.done).forEach(t => { cats[t.category] = (cats[t.category] || 0) + 1; });
+  const topCat = Object.entries(cats).sort((a, b) => b[1] - a[1])[0];
+  if (topCat) {
+    const catNames = { ofm: 'OFM', webdev: 'Web Dev', julien: 'Julien Pro', iptv: 'IPTV', perso: 'Perso' };
+    insights.push({ icon: '📊', text: `Le projet le plus chargé : ${catNames[topCat[0]] || topCat[0]} avec ${topCat[1]} tâche${topCat[1] > 1 ? 's' : ''} en attente.` });
+  }
+
+  insights.push({ icon: '⭐', text: `Encore ${xpNext} XP pour atteindre le niveau ${lvl + 1}. Chaque tâche compte !` });
+
+  return insights;
+}
+
+function renderJarvisInsights() {
+  const el = document.getElementById('jarvis-insights');
+  if (!el) return;
+  const insights = getJarvisInsights();
+  el.innerHTML = insights.slice(0, 3).map(i =>
+    `<div class="insight-row"><span class="insight-icon">${i.icon}</span><span class="insight-text">${i.text}</span></div>`
+  ).join('');
+}
+
+const JARVIS_RESPONSES = [
+  { keys: ['priorité','priorités','priorité','urgent','haute'], fn: () => {
+    const hp = state.tasks.filter(t => t.priority === 'haute' && !t.done);
+    if (hp.length === 0) return '✅ Aucune tâche haute priorité en attente. Bien joué !';
+    return `🚨 ${hp.length} haute${hp.length > 1 ? 's priorités' : ' priorité'} en attente :\n${hp.slice(0,3).map(t => `· ${t.text}`).join('\n')}`;
+  }},
+  { keys: ['streak','série','jours'], fn: () => {
+    const s = state.game.streak;
+    if (s === 0) return '⚡ Ton streak est à 0. Lance-toi — complète 3 tâches aujourd\'hui pour démarrer une série !';
+    if (s < 7) return `🔥 Streak de ${s} jour${s > 1 ? 's' : ''}. Continue — 7 jours débloque l\'achievement "Streak x7" !`;
+    return `🔥 Incroyable streak de ${s} jours ! Tu es une machine. Ne t\'arrête pas maintenant.`;
+  }},
+  { keys: ['aujourd\'hui','bilan','résumé','journée'], fn: () => {
+    const total = state.tasks.length, done = state.tasks.filter(t => t.done).length;
+    const rate = total > 0 ? Math.round(done/total*100) : 0;
+    return `📊 Bilan du jour :\n· ${done}/${total} tâches validées (${rate}%)\n· ${state.game.todayCompleted} complétées au total\n· Streak : ${state.game.streak} jours\n· XP : ${state.game.totalXP}`;
+  }},
+  { keys: ['xp','niveau','level','progression'], fn: () => {
+    const lvl = getLevel(state.game.totalXP);
+    const xpNext = xpForLevel(lvl + 1) - state.game.totalXP;
+    return `⭐ Niveau ${lvl} — "${getLevelTitle(lvl)}"\n· XP total : ${state.game.totalXP}\n· Il te faut ${xpNext} XP pour le niveau ${lvl + 1}\n· Complète tes tâches haute priorité (+30 XP chacune) pour monter vite.`;
+  }},
+  { keys: ['aide','comment','quoi faire','que faire'], fn: () =>
+    '🤖 Je peux t\'aider avec :\n· "priorités" — liste tes tâches urgentes\n· "bilan" — résumé de ta journée\n· "streak" — info sur ta série\n· "xp" — ta progression\n· "idée" — capture une idée rapide'
+  },
+  { keys: ['idée','idées','note','capture'], fn: () =>
+    '💡 Pour capturer une idée : utilise la zone "Capturer une idée" juste en dessous, ou appuie sur ⌘⇧H depuis n\'importe où pour ouvrir directement cet onglet !'
+  },
+];
+
+function handleJarvisQuery(q) {
+  const ql = q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  for (const r of JARVIS_RESPONSES) {
+    if (r.keys.some(k => ql.includes(k.normalize('NFD').replace(/[̀-ͯ]/g, '')))) {
+      return r.fn();
+    }
+  }
+  const insights = getJarvisInsights();
+  return insights.length > 0 ? `🤖 ${insights[Math.floor(Math.random() * insights.length)].text}` : '🤖 Continue comme ça !';
+}
+
+function sendJarvis() {
+  const input = document.getElementById('jarvis-input');
+  const q = input.value.trim();
+  if (!q) return;
+  const msgs = document.getElementById('jarvis-messages');
+  const userMsg = document.createElement('div'); userMsg.className = 'msg-user'; userMsg.textContent = q;
+  msgs.appendChild(userMsg);
+  const reply = handleJarvisQuery(q);
+  const botMsg = document.createElement('div'); botMsg.className = 'msg-jarvis';
+  botMsg.style.whiteSpace = 'pre-line'; botMsg.textContent = reply;
+  msgs.appendChild(botMsg);
+  msgs.scrollTop = msgs.scrollHeight;
+  input.value = '';
+}
+
+// ═══════════════════════════════════════════
 //  RENDER
 // ═══════════════════════════════════════════
 function render() {
@@ -1422,6 +1745,44 @@ function render() {
 //  INIT
 // ═══════════════════════════════════════════
 document.getElementById('task-input').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
+document.getElementById('jarvis-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendJarvis(); });
+document.getElementById('idea-input').addEventListener('keydown', e => { if (e.key === 'Enter') captureIdea(); });
+
+if (window.hustleAPI && window.hustleAPI.onOpenTab) {
+  window.hustleAPI.onOpenTab((tab) => { switchTab(tab); });
+}
+
+if (window.hustleAPI && window.hustleAPI.onTaskDoneFromNotif) {
+  window.hustleAPI.onTaskDoneFromNotif((taskId) => {
+    const t = state.tasks.find(t => t.id === taskId);
+    if (!t || t.done) return;
+    t.done = true;
+    const xp = PRIOS[t.priority] ? PRIOS[t.priority].xp : 15;
+    const oldLvl = getLevel(state.game.totalXP);
+    state.game.totalXP += xp;
+    state.game.completedAllTime++;
+    state.game.todayCompleted++;
+    if (t.priority === 'haute') state.game.todayHighDone++;
+    if (!state.game.todayCategoriesUsed.includes(t.category)) state.game.todayCategoriesUsed.push(t.category);
+    const today = todayStr();
+    if (state.game.lastActiveDate !== today) {
+      const last = state.game.lastActiveDate ? new Date(state.game.lastActiveDate) : null;
+      if (!last) state.game.streak = 1;
+      else { const diff = Math.floor((new Date(today) - last) / 86400000); state.game.streak = diff === 1 ? state.game.streak + 1 : 1; }
+      state.game.lastActiveDate = today;
+    }
+    if (state.game.todayCompleted === 3 && state.game.questCompletedDate !== today) {
+      state.game.questCompletedDate = today; state.game.totalXP += 50;
+      setTimeout(() => showXPPop('+50 XP QUEST!', window.innerWidth / 2, 200), 400);
+    }
+    showXPPop(`+${xp} XP`, window.innerWidth / 2, 160);
+    const newLvl = getLevel(state.game.totalXP);
+    if (newLvl > oldLvl) setTimeout(() => showLevelUp(newLvl), 600);
+    checkAchievements();
+    saveState(); render();
+  });
+}
+
 loadState();
 loadAppVersion();
 </script>

@@ -1,36 +1,28 @@
-const { app, BrowserWindow, Tray, Menu, Notification, ipcMain, nativeImage, shell, dialog } = require('electron');
+const { app, BrowserWindow, Tray, Menu, Notification, ipcMain, nativeImage, shell, screen, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
 
-// === AUTO-UPDATER CONFIG ===
-autoUpdater.autoDownload = false; // On télécharge seulement si l'utilisateur confirme
+autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = true;
 
 let mainWindow = null;
+let notifWindow = null;
 let tray = null;
 let notifTimer = null;
 let scheduledTimer = null;
 let isQuitting = false;
 
-// State partagé avec le renderer (synchronisé via IPC)
 let state = {
   tasks: [],
   notes: '',
+  routines: [],
+  crm: { contacts: [] },
   game: {
-    totalXP: 0,
-    completedAllTime: 0,
-    streak: 0,
-    lastActiveDate: null,
-    achievements: [],
-    todayDate: null,
-    todayCompleted: 0,
-    todayHighDone: 0,
-    todayCategoriesUsed: [],
-    notifEnabled: false,
-    notifIntervalMin: 90,
-    autoStart: false,
-    questCompletedDate: null,
+    totalXP: 0, completedAllTime: 0, streak: 0, lastActiveDate: null,
+    achievements: [], todayDate: null, todayCompleted: 0, todayHighDone: 0,
+    todayCategoriesUsed: [], notifEnabled: false, notifIntervalMin: 90,
+    autoStart: false, questCompletedDate: null,
     scheduledAlerts: [
       { id: 1, time: '17:50', label: 'Mettre à jour la liste pour les prochaines 24h', enabled: true, lastFiredDate: null },
       { id: 2, time: '18:50', label: 'Mettre à jour la liste pour les prochaines 24h', enabled: true, lastFiredDate: null }
@@ -38,7 +30,6 @@ let state = {
   }
 };
 
-// === STORAGE ===
 const dataPath = path.join(app.getPath('userData'), 'hustle-data.json');
 
 function loadState() {
@@ -50,7 +41,6 @@ function loadState() {
     }
   } catch (e) { console.error('Load error:', e); }
 
-  // Migration: ajout des scheduledAlerts par défaut pour anciennes versions
   if (!state.game.scheduledAlerts) {
     state.game.scheduledAlerts = [
       { id: 1, time: '17:50', label: 'Mettre à jour la liste pour les prochaines 24h', enabled: true, lastFiredDate: null },
@@ -58,88 +48,51 @@ function loadState() {
     ];
     saveState();
   }
+  if (!state.routines) { state.routines = []; saveState(); }
+  if (!state.crm) { state.crm = { contacts: [] }; saveState(); }
 }
 
 function saveState() {
-  try {
-    fs.writeFileSync(dataPath, JSON.stringify(state, null, 2));
-  } catch (e) { console.error('Save error:', e); }
+  try { fs.writeFileSync(dataPath, JSON.stringify(state, null, 2)); }
+  catch (e) { console.error('Save error:', e); }
 }
 
-// === WINDOW ===
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 1000,
-    minWidth: 380,
-    minHeight: 600,
-    title: 'HUSTLE.OS',
-    backgroundColor: '#09090b',
+    width: 800, height: 1000, minWidth: 380, minHeight: 600,
+    title: 'HUSTLE.OS', backgroundColor: '#09090b',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     icon: path.join(__dirname, 'build', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false
+      contextIsolation: true, nodeIntegration: false
     },
     show: false
   });
-
   mainWindow.loadFile('index.html');
-
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
-  });
-
-  // Quand on clique X : cacher la fenêtre, ne pas quitter (pour que les notifs continuent)
+  mainWindow.once('ready-to-show', () => mainWindow.show());
   mainWindow.on('close', (e) => {
     if (!isQuitting) {
-      e.preventDefault();
-      mainWindow.hide();
-      // Affichage d'une notification la première fois pour expliquer
+      e.preventDefault(); mainWindow.hide();
       if (!state.game.toldAboutTray) {
-        new Notification({
-          title: 'HUSTLE.OS continue en arrière-plan',
-          body: 'Clique sur l\'icône H dans la barre menu pour rouvrir.'
-        }).show();
-        state.game.toldAboutTray = true;
-        saveState();
+        new Notification({ title: 'HUSTLE.OS continue en arrière-plan', body: 'Clique sur H dans la barre menu pour rouvrir.' }).show();
+        state.game.toldAboutTray = true; saveState();
       }
-      return false;
     }
   });
-
-  // Liens externes ouvrent dans le navigateur par défaut
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
-    return { action: 'deny' };
-  });
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
 }
 
-// === TRAY (menu bar Mac / system tray Windows) ===
 function createTray() {
-  let trayIconPath;
-  if (process.platform === 'darwin') {
-    // Mac: Template image (auto invert dark/light)
-    trayIconPath = path.join(__dirname, 'build', 'trayTemplate.png');
-  } else {
-    trayIconPath = path.join(__dirname, 'build', 'trayTemplate@2x.png');
-  }
-
-  const trayIcon = nativeImage.createFromPath(trayIconPath);
-  if (process.platform === 'darwin') {
-    trayIcon.setTemplateImage(true);
-  }
-
-  tray = new Tray(trayIcon);
+  let p = process.platform === 'darwin'
+    ? path.join(__dirname, 'build', 'trayTemplate.png')
+    : path.join(__dirname, 'build', 'trayTemplate@2x.png');
+  const icon = nativeImage.createFromPath(p);
+  if (process.platform === 'darwin') icon.setTemplateImage(true);
+  tray = new Tray(icon);
   tray.setToolTip('HUSTLE.OS');
   updateTrayMenu();
-
-  tray.on('click', () => {
-    if (process.platform !== 'darwin') {
-      showWindow();
-    }
-  });
+  tray.on('click', () => { if (process.platform !== 'darwin') showWindow(); });
 }
 
 function updateTrayMenu() {
@@ -147,347 +100,263 @@ function updateTrayMenu() {
   const total = state.tasks.length;
   const done = state.tasks.filter(t => t.done).length;
   const undone = total - done;
+  const pct = total > 0 ? Math.round(done / total * 100) : 0;
+
+  const progressBar = total > 0
+    ? '▓'.repeat(Math.round(pct / 10)) + '░'.repeat(10 - Math.round(pct / 10))
+    : '░░░░░░░░░░';
 
   const menu = Menu.buildFromTemplate([
-    { label: `📋 ${done}/${total} tâches faites`, enabled: false },
-    { label: `🔥 Streak: ${state.game.streak} jour${state.game.streak > 1 ? 's' : ''}`, enabled: false },
-    { label: `⭐ ${state.game.totalXP} XP`, enabled: false },
+    { label: total === 0 ? 'Aucune tâche planifiée' : done === total ? `✅ Tout validé ! (${total}/${total})` : `${progressBar}  ${pct}%`, enabled: false },
+    { label: total > 0 && done < total ? `${undone} restante${undone > 1 ? 's' : ''} · ${done} validée${done > 1 ? 's' : ''}` : '', enabled: false, visible: total > 0 && done < total },
     { type: 'separator' },
-    { label: 'Ouvrir HUSTLE.OS', click: showWindow, accelerator: 'CmdOrCtrl+Shift+H' },
+    { label: `🔥 Streak ${state.game.streak} jour${state.game.streak > 1 ? 's' : ''}  ·  ⭐ ${state.game.totalXP} XP`, enabled: false },
+    { type: 'separator' },
+    { label: 'Ouvrir HUSTLE.OS', click: showWindow },
+    { label: '💡 Capturer une idée  ⌘⇧H', click: () => { showWindow(); setTimeout(() => { if (mainWindow) mainWindow.webContents.send('open-tab', 'id'); }, 200); } },
+    { label: 'Voir les tâches restantes', click: triggerCheckIn },
     {
-      label: state.game.notifEnabled
-        ? `🔔 Notifs: ON (${state.game.notifIntervalMin}min)`
-        : '🔕 Notifs: OFF',
+      label: state.game.notifEnabled ? `🔔 Notifs ON (${state.game.notifIntervalMin} min)` : '🔕 Notifs OFF',
       click: toggleNotifsFromTray
     },
     { type: 'separator' },
-    {
-      label: 'Démarrage automatique',
-      type: 'checkbox',
-      checked: state.game.autoStart || false,
-      click: toggleAutoStart
-    },
+    { label: 'Démarrage automatique', type: 'checkbox', checked: state.game.autoStart || false, click: toggleAutoStart },
     { type: 'separator' },
     { label: 'Quitter', click: () => { isQuitting = true; app.quit(); } }
   ]);
-
   tray.setContextMenu(menu);
 }
 
 function showWindow() {
   if (!mainWindow) createWindow();
   if (mainWindow.isMinimized()) mainWindow.restore();
-  mainWindow.show();
-  mainWindow.focus();
+  mainWindow.show(); mainWindow.focus();
 }
 
-// === NOTIFICATIONS ===
-function buildCheckInMessage() {
-  const total = state.tasks.length;
-  const done = state.tasks.filter(t => t.done).length;
-  const undone = total - done;
-  const highUndone = state.tasks.filter(t => !t.done && t.priority === 'haute').length;
+// ── POPUP CUSTOM (remplace les notifs système Apple) ──
+function showCustomNotif(data) {
+  if (notifWindow && !notifWindow.isDestroyed()) {
+    notifWindow.close();
+    notifWindow = null;
+  }
 
-  if (total === 0) {
-    return { title: '📋 HUSTLE.OS — rien de prévu', body: 'T\'as rien préparé pour demain. Ouvre l\'app.' };
-  }
-  if (done === total) {
-    return { title: '🔥 HUSTLE.OS — TOUT EST FAIT', body: 'Sniper. T\'as pris de l\'avance ou tu poses ?' };
-  }
-  if (highUndone > 0) {
-    return {
-      title: `🚨 HUSTLE.OS — ${highUndone} prio en attente`,
-      body: `${done}/${total} faites. T'as pris de l'avance ?`
-    };
-  }
-  return {
-    title: '⏰ HUSTLE.OS — Check-in',
-    body: `${done}/${total} fait. T'as pris de l'avance ?`
-  };
+  const display = screen.getPrimaryDisplay();
+  const { width } = display.workAreaSize;
+  const winW = 400;
+  const taskCount = data.tasks ? Math.min(data.tasks.length, 5) : 0;
+  const winH = 165 + taskCount * 66 + (data.total > 0 ? 60 : 0);
+
+  notifWindow = new BrowserWindow({
+    width: winW, height: winH,
+    x: width - winW - 12, y: 36,
+    frame: false, transparent: true,
+    alwaysOnTop: true, skipTaskbar: true,
+    resizable: false, movable: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'notif-preload.js'),
+      contextIsolation: true, nodeIntegration: false
+    },
+    show: false
+  });
+
+  const encoded = encodeURIComponent(JSON.stringify(data));
+  notifWindow.loadFile('notif.html', { query: { d: encoded } });
+  notifWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  notifWindow.once('ready-to-show', () => {
+    if (notifWindow && !notifWindow.isDestroyed()) notifWindow.showInactive();
+  });
+
+  setTimeout(() => {
+    if (notifWindow && !notifWindow.isDestroyed()) { notifWindow.close(); notifWindow = null; }
+  }, 10000);
 }
+
+ipcMain.on('notif-open-app', () => {
+  if (notifWindow && !notifWindow.isDestroyed()) { notifWindow.close(); notifWindow = null; }
+  showWindow();
+});
+ipcMain.on('notif-close', () => {
+  if (notifWindow && !notifWindow.isDestroyed()) { notifWindow.close(); notifWindow = null; }
+});
 
 function triggerCheckIn() {
-  const msg = buildCheckInMessage();
-  const notif = new Notification({
-    title: msg.title,
-    body: msg.body,
-    silent: false
+  const total = state.tasks.length;
+  const done = state.tasks.filter(t => t.done).length;
+  const undone = state.tasks.filter(t => !t.done);
+  const priOrder = { haute: 0, moyenne: 1, basse: 2 };
+  const undoneSort = [...undone].sort((a, b) => (priOrder[a.priority] || 1) - (priOrder[b.priority] || 1));
+
+  if (total === 0) {
+    showCustomNotif({ title: '📋 Aucune tâche planifiée', body: 'Ouvre l\'app pour préparer ta journée.', total: 0 });
+    return;
+  }
+  if (done === total) {
+    showCustomNotif({ title: '🔥 Tout est fait !', body: `${total}/${total} tâches validées. Excellent !`, total, done });
+    return;
+  }
+
+  const tasks = undoneSort.map(t => ({
+    id: t.id,
+    text: t.text.length > 38 ? t.text.slice(0, 38) + '…' : t.text,
+    priority: t.priority,
+    icon: t.priority === 'haute' ? '🚨' : t.priority === 'moyenne' ? '⚡' : '📌'
+  }));
+
+  showCustomNotif({
+    title: `⏰ ${undone.length} tâche${undone.length > 1 ? 's' : ''} restante${undone.length > 1 ? 's' : ''}`,
+    tasks, total, done
   });
-  notif.on('click', showWindow);
-  notif.show();
-  console.log('[Check-in]', msg.title);
 }
 
 function startNotifTimer() {
   stopNotifTimer();
   if (!state.game.notifEnabled) return;
-  const intervalMs = (state.game.notifIntervalMin || 90) * 60 * 1000;
-  notifTimer = setInterval(triggerCheckIn, intervalMs);
-  console.log(`[Notifs] Timer started: every ${state.game.notifIntervalMin} min`);
+  const ms = (state.game.notifIntervalMin || 90) * 60 * 1000;
+  notifTimer = setInterval(triggerCheckIn, ms);
 }
+function stopNotifTimer() { if (notifTimer) { clearInterval(notifTimer); notifTimer = null; } }
 
-function stopNotifTimer() {
-  if (notifTimer) {
-    clearInterval(notifTimer);
-    notifTimer = null;
-  }
-}
-
-// === SCHEDULED ALERTS (heures fixes type 17h50, 18h50, etc.) ===
 function checkScheduledAlerts() {
-  if (!state.game.scheduledAlerts || state.game.scheduledAlerts.length === 0) return;
   const now = new Date();
-  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const currentTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
   const today = now.toISOString().split('T')[0];
+  const dayNames = ['sun','mon','tue','wed','thu','fri','sat'];
+  const todayDay = dayNames[now.getDay()];
 
-  for (const alert of state.game.scheduledAlerts) {
-    if (!alert.enabled) continue;
-    if (alert.time !== currentTime) continue;
-    if (alert.lastFiredDate === today) continue; // déjà tirée aujourd'hui
+  // Alertes ponctuelles
+  if (state.game.scheduledAlerts) {
+    for (const alert of state.game.scheduledAlerts) {
+      if (!alert.enabled || alert.time !== currentTime || alert.lastFiredDate === today) continue;
+      showCustomNotif({ title: `⏰ ${alert.time}`, body: alert.label || 'Rappel programmé', total: 0 });
+      alert.lastFiredDate = today; saveState();
+    }
+  }
 
-    // Tire la notif
-    const notif = new Notification({
-      title: `⏰ ${alert.time} — HUSTLE.OS`,
-      body: alert.label || 'Rappel programmé',
-      silent: false
-    });
-    notif.on('click', showWindow);
-    notif.show();
-    console.log(`[Scheduled alert] ${alert.time}: ${alert.label}`);
-    alert.lastFiredDate = today;
-    saveState();
+  // Routines quotidiennes
+  if (state.routines) {
+    for (const r of state.routines) {
+      if (!r.enabled || r.time !== currentTime || r.lastNotifDate === today) continue;
+      const days = r.days;
+      if (days !== 'all' && Array.isArray(days) && !days.includes(todayDay)) continue;
+      showCustomNotif({ title: `🔁 ${r.name}`, body: `C'est l'heure — tâche ajoutée à ta liste`, total: 0 });
+      r.lastNotifDate = today; saveState();
+    }
   }
 }
 
 function startScheduledTimer() {
   stopScheduledTimer();
-  // Vérifie toutes les 30 secondes pour ne jamais rater une minute exacte
   scheduledTimer = setInterval(checkScheduledAlerts, 30 * 1000);
-  console.log('[Scheduled] Timer started: check every 30s');
 }
-
-function stopScheduledTimer() {
-  if (scheduledTimer) {
-    clearInterval(scheduledTimer);
-    scheduledTimer = null;
-  }
-}
+function stopScheduledTimer() { if (scheduledTimer) { clearInterval(scheduledTimer); scheduledTimer = null; } }
 
 function toggleNotifsFromTray() {
-  state.game.notifEnabled = !state.game.notifEnabled;
-  saveState();
+  state.game.notifEnabled = !state.game.notifEnabled; saveState();
   if (state.game.notifEnabled) {
     startNotifTimer();
-    new Notification({
-      title: 'HUSTLE.OS — Check-ins activés',
-      body: `Toutes les ${state.game.notifIntervalMin} minutes.`
-    }).show();
-  } else {
-    stopNotifTimer();
-  }
+    showCustomNotif({ title: '🔔 Check-ins activés', body: `Rappel toutes les ${state.game.notifIntervalMin} minutes.`, total: 0 });
+  } else { stopNotifTimer(); }
   updateTrayMenu();
   if (mainWindow) mainWindow.webContents.send('state-changed', state);
 }
 
-// === AUTO-START ===
 function toggleAutoStart() {
-  const newVal = !state.game.autoStart;
-  state.game.autoStart = newVal;
-  app.setLoginItemSettings({
-    openAtLogin: newVal,
-    openAsHidden: true
-  });
-  saveState();
-  updateTrayMenu();
+  state.game.autoStart = !state.game.autoStart;
+  app.setLoginItemSettings({ openAtLogin: state.game.autoStart, openAsHidden: true });
+  saveState(); updateTrayMenu();
 }
 
-// === IPC HANDLERS (renderer ↔ main) ===
+// IPC
 ipcMain.handle('get-state', () => state);
-
 ipcMain.handle('save-state', (event, newState) => {
-  state = newState;
-  saveState();
-  updateTrayMenu();
-  // Restart timer if interval changed
-  if (state.game.notifEnabled) {
-    startNotifTimer();
-  } else {
-    stopNotifTimer();
-  }
+  state = newState; saveState(); updateTrayMenu();
+  if (state.game.notifEnabled) startNotifTimer(); else stopNotifTimer();
   return true;
 });
-
-ipcMain.handle('toggle-notifs', () => {
-  toggleNotifsFromTray();
-  return state.game.notifEnabled;
-});
-
-ipcMain.handle('toggle-autostart', () => {
-  toggleAutoStart();
-  return state.game.autoStart;
-});
-
-ipcMain.handle('test-notification', () => {
-  triggerCheckIn();
-  return true;
-});
-
+ipcMain.handle('toggle-notifs', () => { toggleNotifsFromTray(); return state.game.notifEnabled; });
+ipcMain.handle('toggle-autostart', () => { toggleAutoStart(); return state.game.autoStart; });
+ipcMain.handle('test-notification', () => { triggerCheckIn(); return true; });
 ipcMain.handle('test-scheduled-alert', (event, alertId) => {
   const alert = state.game.scheduledAlerts.find(a => a.id === alertId);
   if (!alert) return false;
-  const notif = new Notification({
-    title: `⏰ ${alert.time} — HUSTLE.OS (test)`,
-    body: alert.label || 'Rappel programmé',
-    silent: false
-  });
-  notif.on('click', showWindow);
-  notif.show();
+  showCustomNotif({ title: `⏰ ${alert.time} (test)`, body: alert.label || 'Rappel programmé', total: 0 });
+  return true;
+});
+ipcMain.handle('test-routine', (event, routineId) => {
+  const r = state.routines.find(x => x.id === routineId);
+  if (!r) return false;
+  showCustomNotif({ title: `🔁 ${r.name} (test)`, body: `C'est l'heure — tâche ajoutée à ta liste`, total: 0 });
+  return true;
+});
+ipcMain.handle('get-app-version', () => app.getVersion());
+ipcMain.handle('done-task-from-notif', (event, taskId) => {
+  const t = state.tasks.find(t => t.id === taskId);
+  if (!t || t.done) return false;
+  t.done = true;
+  saveState(); updateTrayMenu();
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('task-done-from-notif', taskId);
+  return true;
+});
+ipcMain.handle('snooze-task', (event, taskId) => {
+  const t = state.tasks.find(t => t.id === taskId);
+  if (!t) return false;
+  setTimeout(() => {
+    const task = state.tasks.find(x => x.id === taskId);
+    if (task && !task.done) {
+      showCustomNotif({
+        title: `⏰ Rappel — ${task.text.length > 32 ? task.text.slice(0, 32) + '…' : task.text}`,
+        tasks: [{ id: task.id, text: task.text.length > 38 ? task.text.slice(0, 38) + '…' : task.text, priority: task.priority, icon: task.priority === 'haute' ? '🚨' : task.priority === 'moyenne' ? '⚡' : '📌' }],
+        total: state.tasks.length,
+        done: state.tasks.filter(t => t.done).length
+      });
+    }
+  }, 30 * 60 * 1000);
   return true;
 });
 
-// === AUTO-UPDATE FUNCTIONS ===
+// Auto-update
 let updateInProgress = false;
-
 function setupAutoUpdater() {
-  autoUpdater.on('checking-for-update', () => {
-    console.log('[Update] Checking for update...');
-    if (mainWindow) mainWindow.webContents.send('update-status', { status: 'checking' });
-  });
-
-  autoUpdater.on('update-available', (info) => {
-    console.log('[Update] Update available:', info.version);
-    if (mainWindow) mainWindow.webContents.send('update-status', {
-      status: 'available',
-      version: info.version,
-      currentVersion: app.getVersion(),
-      releaseNotes: info.releaseNotes
-    });
-  });
-
-  autoUpdater.on('update-not-available', (info) => {
-    console.log('[Update] No update available');
-    if (mainWindow) mainWindow.webContents.send('update-status', {
-      status: 'up-to-date',
-      currentVersion: app.getVersion()
-    });
-  });
-
-  autoUpdater.on('error', (err) => {
-    console.error('[Update] Error:', err);
-    updateInProgress = false;
-    if (mainWindow) mainWindow.webContents.send('update-status', {
-      status: 'error',
-      error: err.message
-    });
-  });
-
-  autoUpdater.on('download-progress', (progress) => {
-    const pct = Math.round(progress.percent);
-    console.log(`[Update] Downloading: ${pct}%`);
-    if (mainWindow) mainWindow.webContents.send('update-status', {
-      status: 'downloading',
-      percent: pct
-    });
-  });
-
+  autoUpdater.on('checking-for-update', () => { if (mainWindow) mainWindow.webContents.send('update-status', { status: 'checking' }); });
+  autoUpdater.on('update-available', (info) => { if (mainWindow) mainWindow.webContents.send('update-status', { status: 'available', version: info.version, currentVersion: app.getVersion() }); });
+  autoUpdater.on('update-not-available', () => { if (mainWindow) mainWindow.webContents.send('update-status', { status: 'up-to-date', currentVersion: app.getVersion() }); });
+  autoUpdater.on('error', (err) => { updateInProgress = false; if (mainWindow) mainWindow.webContents.send('update-status', { status: 'error', error: err.message }); });
+  autoUpdater.on('download-progress', (p) => { if (mainWindow) mainWindow.webContents.send('update-status', { status: 'downloading', percent: Math.round(p.percent) }); });
   autoUpdater.on('update-downloaded', (info) => {
-    console.log('[Update] Downloaded, ready to install:', info.version);
     updateInProgress = false;
-    if (mainWindow) mainWindow.webContents.send('update-status', {
-      status: 'downloaded',
-      version: info.version
-    });
-    // Notif système
-    const notif = new Notification({
-      title: '🎉 Mise à jour prête !',
-      body: `HUSTLE.OS v${info.version} est téléchargée. Clique pour redémarrer.`,
-      silent: false
-    });
-    notif.on('click', () => {
-      autoUpdater.quitAndInstall();
-    });
-    notif.show();
+    if (mainWindow) mainWindow.webContents.send('update-status', { status: 'downloaded', version: info.version });
+    showCustomNotif({ title: `🎉 Mise à jour v${info.version} prête !`, body: 'Clique pour redémarrer et installer.', total: 0 });
   });
 }
-
 ipcMain.handle('check-for-updates', async () => {
   if (updateInProgress) return { status: 'busy' };
-  try {
-    const result = await autoUpdater.checkForUpdates();
-    return { status: 'ok', currentVersion: app.getVersion() };
-  } catch (e) {
-    console.error('[Update] Check failed:', e);
-    return { status: 'error', error: e.message };
-  }
+  try { await autoUpdater.checkForUpdates(); return { status: 'ok', currentVersion: app.getVersion() }; }
+  catch (e) { return { status: 'error', error: e.message }; }
 });
-
 ipcMain.handle('download-update', async () => {
   if (updateInProgress) return { status: 'busy' };
   updateInProgress = true;
-  try {
-    await autoUpdater.downloadUpdate();
-    return { status: 'started' };
-  } catch (e) {
-    updateInProgress = false;
-    return { status: 'error', error: e.message };
-  }
+  try { await autoUpdater.downloadUpdate(); return { status: 'started' }; }
+  catch (e) { updateInProgress = false; return { status: 'error', error: e.message }; }
 });
+ipcMain.handle('install-update', () => autoUpdater.quitAndInstall());
 
-ipcMain.handle('install-update', () => {
-  autoUpdater.quitAndInstall();
-});
-
-ipcMain.handle('get-app-version', () => {
-  return app.getVersion();
-});
-
-// === APP LIFECYCLE ===
 app.whenReady().then(() => {
   loadState();
-
-  // Restore auto-start setting
-  app.setLoginItemSettings({
-    openAtLogin: state.game.autoStart || false,
-    openAsHidden: true
-  });
-
-  createWindow();
-  createTray();
-
-  // Restart timer if was enabled
-  if (state.game.notifEnabled) {
-    startNotifTimer();
-  }
-
-  // Toujours démarrer le timer des alertes programmées
+  app.setLoginItemSettings({ openAtLogin: state.game.autoStart || false, openAsHidden: true });
+  createWindow(); createTray();
+  if (state.game.notifEnabled) startNotifTimer();
   startScheduledTimer();
-
-  // Setup auto-updater
   setupAutoUpdater();
+  setTimeout(() => { autoUpdater.checkForUpdates().catch(() => {}); }, 10000);
 
-  // Vérifier les mises à jour au lancement (silencieusement, après 10 secondes)
-  setTimeout(() => {
-    autoUpdater.checkForUpdates().catch(err => {
-      console.log('[Update] Auto-check on launch failed (normal in dev):', err.message);
-    });
-  }, 10 * 1000);
-
-  // Mac: re-create window when dock icon clicked
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-    else showWindow();
+  globalShortcut.register('CommandOrControl+Shift+H', () => {
+    showWindow();
+    setTimeout(() => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('open-tab', 'id'); }, 200);
   });
+
+  app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); else showWindow(); });
 });
 
-// Mac: don't quit on close all windows (only via tray menu)
-app.on('window-all-closed', (e) => {
-  if (process.platform !== 'darwin') {
-    // On Windows/Linux, keep running in tray
-    e.preventDefault();
-  }
-});
-
-app.on('before-quit', () => {
-  isQuitting = true;
-  saveState();
-});
+app.on('window-all-closed', (e) => { if (process.platform !== 'darwin') e.preventDefault(); });
+app.on('before-quit', () => { isQuitting = true; globalShortcut.unregisterAll(); saveState(); });

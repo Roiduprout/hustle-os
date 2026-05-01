@@ -7,17 +7,15 @@ contextBridge.exposeInMainWorld('hustleAPI', {
   toggleAutostart: () => ipcRenderer.invoke('toggle-autostart'),
   testNotification: () => ipcRenderer.invoke('test-notification'),
   testScheduledAlert: (id) => ipcRenderer.invoke('test-scheduled-alert', id),
-  // Auto-update
+  testRoutine: (id) => ipcRenderer.invoke('test-routine', id),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
-  onUpdateStatus: (callback) => {
-    ipcRenderer.on('update-status', (event, info) => callback(info));
-  },
-  onStateChange: (callback) => {
-    ipcRenderer.on('state-changed', (event, state) => callback(state));
-  },
+  onUpdateStatus: (cb) => ipcRenderer.on('update-status', (e, info) => cb(info)),
+  onStateChange: (cb) => ipcRenderer.on('state-changed', (e, state) => cb(state)),
+  onTaskDoneFromNotif: (cb) => ipcRenderer.on('task-done-from-notif', (e, taskId) => cb(taskId)),
+  onOpenTab: (cb) => ipcRenderer.on('open-tab', (e, tab) => cb(tab)),
   isElectron: true,
   platform: process.platform
 });
