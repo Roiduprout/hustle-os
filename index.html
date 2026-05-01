@@ -178,6 +178,8 @@
   .task-del:hover { color: var(--red); }
   .task-test-btn { background: none; border: 1px solid var(--border); border-radius: 4px; color: var(--text-mute); font-family: ui-monospace, monospace; font-size: 9px; padding: 2px 6px; cursor: pointer; transition: all 0.15s; align-self: flex-start; margin-top: 2px; }
   .task-test-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .task-undo-btn { background: none; border: 1px solid var(--border); border-radius: 4px; color: var(--text-mute); font-family: ui-monospace, monospace; font-size: 9px; padding: 2px 6px; cursor: pointer; transition: all 0.15s; align-self: flex-start; margin-top: 2px; }
+  .task-undo-btn:hover { border-color: var(--gold); color: var(--gold); }
 
   .notes-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
   .notes-lbl { font-family: ui-monospace, monospace; font-size: 9px; color: var(--text-mute); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
@@ -1733,7 +1735,10 @@ function render() {
             </div>
             <div class="task-text">${esc(t.text)}</div>
           </div>
-          <button class="task-test-btn" onclick="testTaskNotif(${t.id})" title="Tester la notification">▶</button>
+          ${t.done
+            ? `<button class="task-undo-btn" onclick="toggleTask(${t.id}, event)" title="Remettre en cours">↩</button>`
+            : `<button class="task-test-btn" onclick="testTaskNotif(${t.id})" title="Tester la notification">▶</button>`
+          }
           <button class="task-del" onclick="deleteTask(${t.id})">×</button>
         </div>`;
     }).join('');
