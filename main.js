@@ -288,6 +288,18 @@ ipcMain.handle('save-state', (event, newState) => {
 ipcMain.handle('toggle-notifs', () => { toggleNotifsFromTray(); return state.game.notifEnabled; });
 ipcMain.handle('toggle-autostart', () => { toggleAutoStart(); return state.game.autoStart; });
 ipcMain.handle('test-notification', () => { triggerCheckIn(); return true; });
+ipcMain.handle('test-task-notif', (event, taskId) => {
+  const t = state.tasks.find(x => x.id === taskId);
+  if (!t) return false;
+  const icon = t.priority === 'haute' ? '🚨' : t.priority === 'moyenne' ? '⚡' : '📌';
+  showCustomNotif({
+    title: `⏰ Rappel de tâche`,
+    tasks: [{ id: t.id, text: t.text.length > 38 ? t.text.slice(0,38)+'…' : t.text, priority: t.priority, icon }],
+    total: state.tasks.length,
+    done: state.tasks.filter(x => x.done).length
+  });
+  return true;
+});
 ipcMain.handle('test-scheduled-alert', (event, alertId) => {
   const alert = state.game.scheduledAlerts.find(a => a.id === alertId);
   if (!alert) return false;

@@ -176,6 +176,8 @@
   .task-text { font-size: 13px; line-height: 1.4; word-break: break-word; }
   .task-del { background: none; border: none; color: var(--text-mute); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; align-self: flex-start; transition: color 0.15s; }
   .task-del:hover { color: var(--red); }
+  .task-test-btn { background: none; border: 1px solid var(--border); border-radius: 4px; color: var(--text-mute); font-family: ui-monospace, monospace; font-size: 9px; padding: 2px 6px; cursor: pointer; transition: all 0.15s; align-self: flex-start; margin-top: 2px; }
+  .task-test-btn:hover { border-color: var(--accent); color: var(--accent); }
 
   .notes-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
   .notes-lbl { font-family: ui-monospace, monospace; font-size: 9px; color: var(--text-mute); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
@@ -932,6 +934,7 @@ async function toggleTask(id, event) {
 }
 
 async function deleteTask(id) { state.tasks = state.tasks.filter(t => t.id !== id); await saveState(); render(); }
+async function testTaskNotif(id) { if (window.hustleAPI && window.hustleAPI.isElectron) await window.hustleAPI.testTaskNotif(id); }
 async function archiveCompleted() {
   if (!confirm('Supprimer toutes les tâches complétées ?')) return;
   state.tasks = state.tasks.filter(t => !t.done); await saveState(); render();
@@ -1730,6 +1733,7 @@ function render() {
             </div>
             <div class="task-text">${esc(t.text)}</div>
           </div>
+          <button class="task-test-btn" onclick="testTaskNotif(${t.id})" title="Tester la notification">▶</button>
           <button class="task-del" onclick="deleteTask(${t.id})">×</button>
         </div>`;
     }).join('');

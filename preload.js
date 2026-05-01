@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('hustleAPI', {
   testNotification: () => ipcRenderer.invoke('test-notification'),
   testScheduledAlert: (id) => ipcRenderer.invoke('test-scheduled-alert', id),
   testRoutine: (id) => ipcRenderer.invoke('test-routine', id),
+  testTaskNotif: (id) => ipcRenderer.invoke('test-task-notif', id),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
