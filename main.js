@@ -144,7 +144,7 @@ function showCustomNotif(data) {
   const { width } = display.workAreaSize;
   const winW = 400;
   const taskCount = data.tasks ? Math.min(data.tasks.length, 5) : 0;
-  const winH = 165 + taskCount * 66 + (data.total > 0 ? 60 : 0);
+  const winH = 165 + taskCount * 88 + (data.total > 0 ? 60 : 0);
 
   notifWindow = new BrowserWindow({
     width: winW, height: winH,
@@ -324,6 +324,44 @@ ipcMain.handle('test-routine', (event, routineId) => {
   return true;
 });
 ipcMain.handle('get-app-version', () => app.getVersion());
+ipcMain.handle('postpone-task-from-notif', (event, taskId) => {
+  const t = state.tasks.find(x => x.id === taskId);
+  if (!t) return false;
+  // Trouver un créneau libre demain basé sur les routines
+  const tomorrowDayIdx = (new Date().getDay() + 1) % 7;
+  const busyMins = [];
+  (state.routines || []).forEach(r => {
+    if (!r.enabled || !r.time) return;
+    if (r.days === 'all' || (Array.isArray(r.days) && r.days.includes(tomorrowDayIdx))) {
+      const [h, m] = r.time.split(':').map(Number);
+      busyMins.push(h * 60 + m);
+    }
+  });
+  state.tasks.filter(x => x.time && x.id !== taskId).forEach(x => {
+    const [h, m] = x.time.split(':').map(Number); busyMins.push(h * 60 + m);
+  });
+  let freeSlot = '10:00';
+  outer: for (let h = 8; h <= 21; h++) {
+    for (const m of [0, 30]) {
+      const slot = h * 60 + m;
+      if (!busyMins.some(b => Math.abs(b - slot) < 45)) {
+        freeSlot = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`; break outer;
+      }
+    }
+  }
+  t.time = freeSlot;
+  saveState();
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('state-changed', state);
+  return { slot: freeSlot };
+});
+ipcMain.handle('reschedule-task-time', (event, taskId, newTime) => {
+  const t = state.tasks.find(x => x.id === taskId);
+  if (!t) return false;
+  t.time = newTime;
+  saveState();
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('state-changed', state);
+  return true;
+});
 ipcMain.handle('done-task-from-notif', (event, taskId) => {
   const t = state.tasks.find(t => t.id === taskId);
   if (!t || t.done) return false;
