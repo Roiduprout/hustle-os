@@ -1,6 +1,6 @@
 {
   "name": "hustle-os",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Tomorrow planner gamifié avec notifications Mac/Windows en arrière-plan",
   "main": "main.js",
   "author": "Jojo",
