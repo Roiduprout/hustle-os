@@ -302,8 +302,6 @@
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 16px 14px;
-    padding-bottom: calc(var(--nav-h) + 16px);
   }
   .tab-pane.active { display: block; }
   .tab-pane::-webkit-scrollbar { width: 4px; }
@@ -314,62 +312,40 @@
   }
   .tab-pane::-webkit-scrollbar-thumb:hover { background: var(--line-3); }
 
-  /* BOTTOM NAV */
-  .bottom-nav {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    height: var(--nav-h);
-    background: linear-gradient(180deg, var(--surface), var(--bg-2));
-    border-top: 1px solid var(--line);
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    z-index: 50;
-  }
+  /* NAV-BTN base styles (sidebar version above overrides specific layout) */
   .nav-btn {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 4px;
     background: none;
     border: none;
     cursor: pointer;
-    padding: 8px 4px;
     position: relative;
     transition: all 0.18s ease;
   }
   .nav-btn::before {
     content: '';
     position: absolute;
-    top: 0; left: 50%;
-    width: 26px;
-    height: 2px;
     background: var(--accent);
-    border-radius: 0 0 3px 3px;
-    transform: translateX(-50%) scaleX(0);
     box-shadow: 0 0 10px var(--accent-glow);
     transition: transform 0.22s cubic-bezier(0.16,1,0.3,1);
   }
-  .nav-btn.active::before { transform: translateX(-50%) scaleX(1); }
   .nav-icon {
-    font-size: 18px;
-    opacity: 0.4;
+    opacity: 0.45;
     transition: all 0.18s;
     line-height: 1;
-    filter: grayscale(0.4);
+    filter: grayscale(0.3);
   }
   .nav-label {
     font-family: var(--f-mono);
-    font-size: 8px;
     font-weight: 700;
-    letter-spacing: 0.14em;
-    color: var(--text-mute);
+    color: var(--text-dim);
     text-transform: uppercase;
     transition: color 0.18s;
+    white-space: nowrap;
   }
   .nav-btn.active .nav-icon { opacity: 1; filter: none; }
   .nav-btn.active .nav-label { color: var(--accent); }
-  .nav-btn:hover .nav-icon { opacity: 0.75; }
+  .nav-btn:hover .nav-icon { opacity: 0.85; }
 
   /* SECTION HEAD */
   .sec-head {
