@@ -80,7 +80,7 @@
   }
   button, input, select, textarea, a { -webkit-app-region: no-drag; }
 
-  /* SHELL */
+  /* SHELL — constrained width, centered on wide screens */
   .shell {
     display: flex;
     flex-direction: column;
@@ -88,6 +88,21 @@
     padding-top: var(--titlebar-h);
     position: relative;
     z-index: 1;
+    max-width: 520px;
+    margin: 0 auto;
+    width: 100%;
+    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    background: var(--bg);
+  }
+  /* Bottom nav also constrained + centered */
+  .bottom-nav {
+    max-width: 520px;
+    margin: 0 auto;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
   }
 
   /* HEADER */
